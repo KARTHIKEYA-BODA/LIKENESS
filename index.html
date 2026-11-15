@@ -261,7 +261,7 @@ function getSupabaseClient(){
  return supabaseClient;
 }
 async function syncSupabaseSession(session){
- const api=(window.LIKENESS_API_URL||'http://127.0.0.1:8000').replace(/\/$/,'');
+ const api=(window.LIKENESS_API_URL||window.location.origin).replace(/\/$/,'');
  const response=await fetch(`${api}/api/auth/supabase`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({access_token:session.access_token})});
  if(!response.ok)throw new Error('The server could not save your account.');
  const data=await response.json();localStorage.setItem('likeness_api_token',data.token);
@@ -293,7 +293,7 @@ authModal.onclick=(e)=>{if(e.target===authModal)authModal.classList.remove('on')
 $('#authsubmit').onclick=async()=>{
  const email=$('#authemail').value.trim();
  const password=$('#authpw').value;
- const api=(window.LIKENESS_API_URL||'http://127.0.0.1:8000').replace(/\/$/,'');
+ const api=(window.LIKENESS_API_URL||window.location.origin).replace(/\/$/,'');
  const subBtn=$('#authsubmit');
  subBtn.disabled=true;subBtn.textContent='Signing in…';
  try{
