@@ -1,0 +1,11 @@
+# Runtime secrets and local Python files
+backend/.env
+supabase-config.js
+backend/.venv/
+backend/.deps/
+backend/__pycache__/
+backend/**/*.pyc
+
+# Runtime-generated product images and model caches
+backend/uploads/
+.cache/
