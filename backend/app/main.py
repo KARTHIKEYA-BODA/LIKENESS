@@ -31,6 +31,16 @@ for r in (auth.router, catalog.router, cart.router, orders.router, admin.router)
 app.mount("/media", StaticFiles(directory=UPLOAD_DIR), name="media")
 
 
+@app.get("/", include_in_schema=False)
+def root():
+    return {
+        "status": "Likeness API is live",
+        "health": "/api/health",
+        "docs": "/docs",
+        "products": "/api/products",
+    }
+
+
 @app.get("/api/health")
 def health():
     check_connection()
