@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     validate_settings()
     pool.open()
     check_connection()
-    threading.Thread(target=warm_up, daemon=True).start()   # load CLIP in the background
+    # warm_up is deferred so the server starts immediately and stays within memory limits
     yield
     pool.close()
 
