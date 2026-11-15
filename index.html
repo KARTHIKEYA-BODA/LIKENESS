@@ -294,6 +294,8 @@ $('#authsubmit').onclick=async()=>{
  const email=$('#authemail').value.trim();
  const password=$('#authpw').value;
  const api=(window.LIKENESS_API_URL||'http://127.0.0.1:8000').replace(/\/$/,'');
+ const subBtn=$('#authsubmit');
+ subBtn.disabled=true;subBtn.textContent='Signing in…';
  try{
   const res=await fetch(`${api}/api/auth/login`,{
    method:'POST',
@@ -310,8 +312,13 @@ $('#authsubmit').onclick=async()=>{
   toast('Welcome back, '+data.user.full_name+'!');
  }catch(err){
   toast('Cannot connect to backend: '+err.message);
+ }finally{
+  subBtn.disabled=false;subBtn.textContent='Sign in';
  }
 };
+
+$('#authemail').onkeydown=e=>{if(e.key==='Enter')$('#authsubmit').click()};
+$('#authpw').onkeydown=e=>{if(e.key==='Enter')$('#authsubmit').click()};
 
 $('#googleauth').onclick=async()=>{
  const client=getSupabaseClient();
