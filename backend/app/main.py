@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import BASE_DIR, FRONTEND_URLS, UPLOAD_DIR, validate_settings
-from .db import check_connection, pool
+from .db import check_connection, init_db, pool
 from .embedder import warm_up
 from .routers import admin, auth, cart, catalog, orders
 
@@ -17,6 +17,7 @@ async def lifespan(app: FastAPI):
     validate_settings()
     pool.open()
     check_connection()
+    init_db()
     # warm_up is deferred so the server starts immediately and stays within memory limits
     yield
     pool.close()
