@@ -1,25 +1,54 @@
 # Likeness
 
-Likeness is a FastAPI clothing-store API with visual product search. It uses Supabase Postgres and the `pgvector` extension for image embeddings.
+**A clothing store with visual product search.**
 
-## Connect Supabase
+Likeness combines a lightweight web storefront with a FastAPI backend. It uses Supabase Postgres for application data and `pgvector` for image embeddings.
+
+## What’s inside
+
+- **Storefront:** browse products, manage a cart, and place orders.
+- **Visual search:** find products using image embeddings powered by CLIP.
+- **API:** FastAPI endpoints for authentication, catalog, cart, orders, and admin tasks.
+- **Database:** Supabase Postgres schema and migrations.
+- **Sign-in:** email/password authentication and optional Google sign-in through Supabase.
+
+## Requirements
+
+- Python 3.10 or newer
+- A [Supabase](https://supabase.com/) project
+- [Git](https://git-scm.com/) (to clone the project)
+
+## Get started
+
+### 1. Set up the database
 
 1. Create a Supabase project.
-2. Open **SQL Editor**, paste the contents of [`db/schema.sql`](db/schema.sql), and run it. This enables `pgvector` and creates all tables, indexes, triggers, and views.
-3. In **Connect**, copy the Postgres connection URI. For a deployed API, choose the **Session pooler** connection string and retain `?sslmode=require`.
-4. Copy `backend/.env.example` to `backend/.env`, then set `DATABASE_URL` and a unique `JWT_SECRET` of at least 32 characters. Do not commit this file.
+2. Open **SQL Editor**, run [`db/schema.sql`](db/schema.sql), and wait for it to finish. This enables `pgvector` and creates the tables, indexes, triggers, and views.
+3. In the Supabase project’s **Connect** panel, copy the PostgreSQL connection URI. For a deployed API, use the **Session pooler** URI and keep `?sslmode=require`.
 
-## Google sign-in
+If you already applied an earlier version of the schema, run [`db/migrations/001_supabase_google_auth.sql`](db/migrations/001_supabase_google_auth.sql) to add Google-auth support.
 
-1. Run [`db/migrations/001_supabase_google_auth.sql`](db/migrations/001_supabase_google_auth.sql) in Supabase SQL Editor if you had already applied the schema. New projects can simply use the updated [`db/schema.sql`](db/schema.sql).
-2. In **Supabase Dashboard → Authentication → Providers → Google**, enable Google and enter your Google OAuth client ID and secret.
-3. In **Authentication → URL Configuration**, add the actual URL where this page is served to the redirect allow-list, for example `http://localhost:5173/*` during development. Do not use `file://` for OAuth.
-4. Copy `supabase-config.example.js` to `supabase-config.js`, then add your project URL and anon/publishable key. This browser key is designed to be public; never put your database password or service-role key in that file.
-5. Set the same `SUPABASE_URL` and `SUPABASE_ANON_KEY` in `backend/.env`.
+### 2. Configure the backend
 
-The **Sign in** button then opens Google through Supabase. After sign-in, the FastAPI API verifies the Supabase session and adds or updates the account in the Supabase `users` table.
+Create `backend/.env` and add your settings:
 
-## Run the server
+```env
+DATABASE_URL=postgresql://...
+JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
+
+# Optional: enable Google sign-in through Supabase
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY
+
+# Optional: add the origin of your frontend when it is not localhost:5173
+FRONTEND_URLS=http://localhost:5173
+```
+
+Keep `backend/.env` private and never commit it. The API requires `DATABASE_URL` and a `JWT_SECRET` of at least 32 characters to start.
+
+### 3. Install dependencies and start the API
+
+In PowerShell:
 
 ```powershell
 cd backend
@@ -29,21 +58,46 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-Visit `http://127.0.0.1:8000/api/health`. A successful response includes `"database": "connected"`.
+The API is available at `http://127.0.0.1:8000`. Check the database connection at [`http://127.0.0.1:8000/api/health`](http://127.0.0.1:8000/api/health); a healthy response includes `"database": "connected"`.
 
-## Add demo data (optional)
+### 4. Start the storefront
 
-After the schema is installed and the server environment is configured:
+In a second terminal, from the project root, run:
+
+```powershell
+py -3 -m http.server 5173
+```
+
+Then open [`http://localhost:5173`](http://localhost:5173). You can also run `start-likeness.bat` from the project root to start the storefront server.
+
+## Enable Google sign-in
+
+1. In **Supabase Dashboard → Authentication → Providers → Google**, enable Google and enter your OAuth client ID and secret.
+2. In **Authentication → URL Configuration**, add the storefront URL to the redirect allow-list, such as `http://localhost:5173/*` for local development. OAuth does not work from a `file://` URL.
+3. Copy [`supabase-config.example.js`](supabase-config.example.js) to `supabase-config.js` and set your Supabase project URL and anon/publishable key.
+4. Set the same `SUPABASE_URL` and `SUPABASE_ANON_KEY` values in `backend/.env`.
+
+The browser anon/publishable key is intended to be public. Never put a database password or Supabase service-role key in `supabase-config.js`.
+
+## Optional: add demo data
+
+With the database schema installed and the backend environment configured, run:
 
 ```powershell
 cd backend
 python seed.py
 ```
 
-The seed process generates images and downloads the CLIP model on first use (roughly 600 MB). It creates two development accounts: `admin@likeness.dev` / `admin123` and `shopper@likeness.dev` / `shopper123`. Change or remove them before publishing.
+The seed script generates sample images and downloads the CLIP model on first use (approximately 600 MB). It creates these development accounts:
+
+- Admin: `admin@likeness.dev` / `admin123`
+- Shopper: `shopper@likeness.dev` / `shopper123`
+
+These are for local development only. Change or remove them before publishing.
 
 ## Deployment notes
 
-- Supabase is used as the database; product image files are still written to `backend/uploads`. Use object storage (such as Supabase Storage) before deploying to serverless or multiple instances.
-- Add the deployed frontend origin to `FRONTEND_URLS`, separated by commas if there is more than one origin.
-- Apply row-level security only if clients will connect directly to Supabase. This backend uses its database connection server-side and enforces authorization in FastAPI.
+- Set `DATABASE_URL` and a unique `JWT_SECRET` (at least 32 characters) in your deployment environment.
+- Set `FRONTEND_URLS` to the deployed storefront origin or origins, separated by commas.
+- Product images are stored in `backend/uploads`. Use object storage, such as Supabase Storage, before deploying to serverless or multiple API instances.
+- This backend connects to Postgres server-side and enforces authorization in FastAPI. Apply row-level security if clients will connect directly to Supabase.
