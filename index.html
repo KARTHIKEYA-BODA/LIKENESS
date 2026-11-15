@@ -243,7 +243,7 @@ function add(id){const p=P.find(x=>x.id===id);if((cart[id]||0)>=p.stock){toast('
 let supabaseClient=null;
 function setSignedInUI(user){
  const metadata=user?.user_metadata||{};
- const fullName=metadata.full_name||metadata.name||user?.email?.split('@')[0]||'Account';
+ const fullName=metadata.full_name||metadata.name||user?.full_name||user?.email?.split('@')[0]||'Account';
  const firstName=fullName.trim().split(/\s+/)[0]||'Account';
  const avatar=metadata.avatar_url||metadata.picture||'';
  const button=$('#signin');
@@ -267,13 +267,59 @@ async function syncSupabaseSession(session){
  const data=await response.json();localStorage.setItem('likeness_api_token',data.token);
  setSignedInUI(data.user);
 }
-$('#signin').onclick=async()=>{
- if($('#signin').dataset.signedIn==='true'){toast('You are already signed in.');return}
+let currentUser=JSON.parse(localStorage.getItem('likeness_user')||'null');
+if(currentUser)setSignedInUI(currentUser);
+
+const authModal=$('#authmodal');
+$('#signin').onclick=()=>{
+ if($('#signin').dataset.signedIn==='true'){
+  if(confirm('Signed in as '+(currentUser?.full_name||'User')+'.\n\nDo you want to log out?')){
+   currentUser=null;
+   localStorage.removeItem('likeness_user');
+   localStorage.removeItem('likeness_api_token');
+   const b=$('#signin');
+   b.classList.remove('soft');b.classList.add('ink');
+   b.textContent='Sign in';
+   b.dataset.signedIn='false';
+   toast('Signed out');
+  }
+  return;
+ }
+ authModal.classList.add('on');
+};
+$('#authcancel').onclick=()=>authModal.classList.remove('on');
+authModal.onclick=(e)=>{if(e.target===authModal)authModal.classList.remove('on')};
+
+$('#authsubmit').onclick=async()=>{
+ const email=$('#authemail').value.trim();
+ const password=$('#authpw').value;
+ const api=(window.LIKENESS_API_URL||'http://127.0.0.1:8000').replace(/\/$/,'');
+ try{
+  const res=await fetch(`${api}/api/auth/login`,{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({email,password})
+  });
+  const data=await res.json();
+  if(!res.ok){toast(data.detail||'Sign in failed');return}
+  currentUser=data.user;
+  localStorage.setItem('likeness_user',JSON.stringify(data.user));
+  localStorage.setItem('likeness_api_token',data.token);
+  authModal.classList.remove('on');
+  setSignedInUI(data.user);
+  toast('Welcome back, '+data.user.full_name+'!');
+ }catch(err){
+  toast('Cannot connect to backend: '+err.message);
+ }
+};
+
+$('#googleauth').onclick=async()=>{
  const client=getSupabaseClient();
  if(!client){toast('Add your Supabase settings to supabase-config.js first.');return}
  const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href}});
  if(error)toast(error.message);
 };
+
 async function restoreGoogleSession(){
  const client=getSupabaseClient();if(!client)return;
  const {data:{session}}=await client.auth.getSession();
